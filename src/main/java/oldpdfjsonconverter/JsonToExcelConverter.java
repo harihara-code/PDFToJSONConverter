@@ -1,16 +1,11 @@
-package latestpdfjsonconverter;
+package oldpdfjsonconverter;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -21,13 +16,14 @@ import org.json.JSONObject;
 public class JsonToExcelConverter {
 	 private static final Integer BATCH_SIZE = 200;
 	 
-	 private static final String inputFolderPath = "D:\\NEW_2025_OUTPUT_JSON_FILES";
-	 private static final String outputFilePath = ".\\2025_New_Excel_File.xlsx";
+	 private static final String inputFolderPath = "D:\\testnewfilesoutput";
+	 private static final String outputFilePath = ".\\2025_Excel_File.xlsx";
 	 
 	 private static ArrayList<JSONObject> dataList = new ArrayList<>();
 	 
 	 public static void main(String[] args) throws Exception {
-		 File folder = new File(inputFolderPath);
+	  	
+	  	 File folder = new File(inputFolderPath);
 	        if (!folder.exists() || !folder.isDirectory()) {
 	            //System.out.println("Input folder does not exist: " + inputFolderPath);
 	            return;
@@ -48,20 +44,18 @@ public class JsonToExcelConverter {
 	        	JSONObject data = new JSONObject(jsonString);
 	            
 	            
-	            String beNumber = data.getString("BE Number");
-	            String beDate = data.getString("BE Date");
-	            String beType = data.getString("BE Type");
+	            String beNumber = data.getString("BE_NUMBER");
+	            String beDate = data.getString("BE_DATE");
 	            
-	            JSONArray items = data.getJSONArray("Items");
+	            JSONArray items = data.getJSONArray("ITEMS");
 //	            System.out.println("Total items: " + items.length());
 	            for (int itemIndex = 0; itemIndex < items.length(); itemIndex++) {
 //	            	System.out.println("item index: " + itemIndex);
 	            	
 	            	JSONObject itemDetail = items.getJSONObject(itemIndex);
 	            	
-	            	itemDetail.put("BE Number", beNumber);
-	            	itemDetail.put("BE Date", beDate);
-	            	itemDetail.put("BE Type", beType);
+	            	itemDetail.put("BE_NUMBER", beNumber);
+	            	itemDetail.put("BE_DATE", beDate);
 //	            	System.out.println("adding item ");
 	            	addItemDataToExcel(itemDetail);
 	            	totalRowsCount++;
@@ -112,15 +106,9 @@ public class JsonToExcelConverter {
     	    rowNum = writeHeaders(sheet, 0); // write headers
     	}
 
-         CellStyle dateStyle = workbook.createCellStyle();
-		 CreationHelper createHelper = workbook.getCreationHelper();
-		 dateStyle.setDataFormat(
-		     createHelper.createDataFormat().getFormat("dd\"/\"MM\"/\"yyyy")
-		 );
-		 
-		 for (int dataListIndex = 0; dataListIndex < dataList.size(); dataListIndex++) {
+         for (int dataListIndex = 0; dataListIndex < dataList.size(); dataListIndex++) {
              JSONObject data = dataList.get(dataListIndex);
-        	 rowNum = writeRow(sheet, data, rowNum, dateStyle); 
+        	 rowNum = writeRow(sheet, data, rowNum); 
          }
 
          // Save workbook
@@ -134,7 +122,7 @@ public class JsonToExcelConverter {
 	 
 	    private static int writeHeaders(Sheet sheet, int rowNum) {
 	        Row headerRow = sheet.createRow(rowNum++);
-	        String[] headers = {"BE Number", "BE Date", "BE Type", "Invoice Number", "Item Serial No", "Part Code", "Description", "Concatenate Description", "UNIT PRICE", "UQC", "QUANTITY", "AMOUNT", "HSN", "CUSTOMER QTY", "CUSTOMER UQC", "SUPPLIER QTY", "SUPPLIER UQC"};
+	        String[] headers = {"BE Number", "BE Date", "Item Serial No", "Part Code", "Description", "Concatenate Description", "UQC", "Quantity"};
 
 	        for (int i = 0; i < headers.length; i++) {
 	            headerRow.createCell(i).setCellValue(headers[i]);
@@ -142,7 +130,7 @@ public class JsonToExcelConverter {
 	        return rowNum;
 	    }
 	 
-	    private static int writeRow(Sheet sheet, JSONObject data, int rowNum, CellStyle dateStyle) {
+	    private static int writeRow(Sheet sheet, JSONObject data, int rowNum) {
 	        Row row = sheet.createRow(rowNum++);
 	        
 	        String itemSerialNo = data.optString("Item Serial No");
@@ -150,43 +138,15 @@ public class JsonToExcelConverter {
 	        if (itemSerialNo.isEmpty()) {
 	        	System.out.print(data);
 	        }
-	        
-	        String beDateString = data.optString("BE Date");
-
-	        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-	        LocalDate beDate = LocalDate.parse(beDateString, formatter);
-	        
-	        double qtyDoubleValue = Double.parseDouble(data.optString("Quantity"));
-	        int qtyIntegerValue = (int) qtyDoubleValue;
-	        
-	        row.createCell(0).setCellValue(data.optString("BE Number"));
-
-	        Cell dateCell = row.createCell(1);
-	        dateCell.setCellValue(beDate);
-
-	        CreationHelper createHelper = sheet.getWorkbook().getCreationHelper();
-	        dateStyle.setDataFormat(
-	        	    createHelper.createDataFormat().getFormat("dd\"/\"MM\"/\"yyyy")
-	        	);
-	        dateCell.setCellStyle(dateStyle);
-
-//	        row.createCell(1).setCellValue(beDate);
-	        row.createCell(2).setCellValue(data.optString("BE Type"));
-	        row.createCell(3).setCellValue(data.optString("Invoice No"));
-	        row.createCell(4).setCellValue(data.optString("Item Serial No"));
-	        row.createCell(5).setCellValue(data.optString("Part Code"));
-	        row.createCell(6).setCellValue(data.optString("Description"));
-	        row.createCell(7).setCellValue(data.optString("Concatenate Description"));
-	        row.createCell(8).setCellValue(data.optString("Unit Price"));
-	        row.createCell(9).setCellValue(data.optString("UQC"));
-	        row.createCell(10).setCellValue(qtyIntegerValue);
-	        row.createCell(11).setCellValue(data.optString("Amount"));
-	        row.createCell(12).setCellValue(data.optString("HSN"));
-	        row.createCell(13).setCellValue(data.optString("CUSTOMER_QUANTITY"));
-	        row.createCell(14).setCellValue(data.optString("CUSTOMER_UQC"));
-	        row.createCell(15).setCellValue(data.optString("SUPPLIER_QUANTITY"));
-	        row.createCell(16).setCellValue(data.optString("SUPPLIER_UQC"));
-		       
+	        row.createCell(0).setCellValue(data.optString("BE_NUMBER"));
+	        row.createCell(1).setCellValue(data.optString("BE_DATE"));
+	        row.createCell(2).setCellValue(Integer.parseInt(data.optString("ITEM_SERIAL_NO")));
+	        row.createCell(3).setCellValue(data.optString("PART_CODE"));
+	        row.createCell(4).setCellValue(data.optString("DESCRIPTION"));
+	        row.createCell(5).setCellValue(data.optString("CONCATENATE_DESCRIPTION"));
+	        row.createCell(6).setCellValue(data.optString("UQC"));
+	        row.createCell(7).setCellValue(Integer.parseInt(data.optString("QUANTITY")));
+	          
 	        return rowNum;
 	    }
 }
